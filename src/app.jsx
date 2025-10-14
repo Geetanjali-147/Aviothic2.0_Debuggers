@@ -36,7 +36,7 @@ import {
   validateFile, 
   parseNumber,
   api 
-} from './utils';
+} from './utils.js';
 
 // Single-file React component: SahayScoreApp
 // Tailwind classes assumed available in the project.
