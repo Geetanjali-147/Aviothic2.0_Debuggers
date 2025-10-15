@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+
 import {
   TrendingUp,
   Shield,
@@ -29,7 +30,7 @@ import {
   LOAN_CONFIG,
   FILE_CONFIG,
   STATUS 
-} from './constants';
+} from './constants.js';
 import { 
   validateAadhar, 
   validatePhone, 
@@ -120,24 +121,29 @@ export default function SahayScoreApp() {
   // Fetch applications from backend on mount
   useEffect(() => {
     const fetchData = async () => {
+      // Try localStorage first for faster load
       try {
-        setLoading(true);
+        const raw = localStorage.getItem("sahay_apps_v1");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setApplications(parsed);
+            setLoading(false);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load from localStorage:', e);
+      }
+
+      // Then try to fetch from backend in background
+      try {
         const apps = await api.fetchApplications();
         setApplications(apps);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch applications:', err);
-        setError('Failed to load applications. Using local data.');
-        // Fallback to localStorage
-        try {
-          const raw = localStorage.getItem("sahay_apps_v1");
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            setApplications(Array.isArray(parsed) && parsed.length ? parsed : defaultApps);
-          } else {
-            setApplications(defaultApps);
-          }
-        } catch (e) {
+        console.warn('Backend not available, using local data:', err.message);
+        // Only set error if we have no data at all
+        if (applications.length === 0) {
           setApplications(defaultApps);
         }
       } finally {
@@ -189,6 +195,11 @@ export default function SahayScoreApp() {
     if (appId) setCurrentAppId(appId);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Memoized input change handler to prevent re-renders
+  const handleInputChange = React.useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   // Use parseNumber from utils
   const n = parseNumber;
@@ -625,12 +636,6 @@ export default function SahayScoreApp() {
   }
 
   // ---------- Application Form ---------- //
-  // Replace the ENTIRE ApplicationForm function in your app.jsx
-// Find it around line 370 and replace everything until the closing };
-
-// Replace the ENTIRE ApplicationForm function in your app.jsx
-// Find it around line 370 and replace everything until the closing };
-
 const ApplicationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -861,8 +866,8 @@ const ApplicationForm = () => {
                   type="text"
                   required 
                   value={formData.name} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} 
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${formErrors.name ? 'border-red-500' : ''}`}
+                  onChange={(e) => handleInputChange('name', e.target.value)} 
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Ramesh Kumar"
                   aria-required="true"
                   aria-invalid={!!formErrors.name}
@@ -878,8 +883,8 @@ const ApplicationForm = () => {
                   type="tel"
                   required 
                   value={formData.phone} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} 
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${formErrors.phone ? 'border-red-500' : ''}`}
+                  onChange={(e) => handleInputChange('phone', e.target.value)} 
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${formErrors.phone ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="9876543210"
                   aria-required="true"
                   aria-invalid={!!formErrors.phone}
@@ -895,8 +900,8 @@ const ApplicationForm = () => {
                   type="text"
                   required 
                   value={formData.aadhar} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, aadhar: e.target.value }))} 
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${formErrors.aadhar ? 'border-red-500' : ''}`}
+                  onChange={(e) => handleInputChange('aadhar', e.target.value)} 
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${formErrors.aadhar ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="1234 5678 9012"
                   aria-required="true"
                   aria-invalid={!!formErrors.aadhar}
@@ -911,8 +916,8 @@ const ApplicationForm = () => {
                   id="category-input"
                   required 
                   value={formData.category} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))} 
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  onChange={(e) => handleInputChange('category', e.target.value)} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                   aria-required="true"
                 >
                   <option value="">Select...</option>
@@ -933,8 +938,8 @@ const ApplicationForm = () => {
                   min={LOAN_CONFIG.MIN_LOAN_AMOUNT}
                   max={LOAN_CONFIG.MAX_LOAN_AMOUNT}
                   value={formData.loanAmount} 
-                  onChange={(e) => setFormData({ ...formData, loanAmount: e.target.value })} 
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${formErrors.loanAmount ? 'border-red-500' : ''}`}
+                  onChange={(e) => handleInputChange('loanAmount', e.target.value)} 
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${formErrors.loanAmount ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="50000"
                   aria-required="true"
                   aria-invalid={!!formErrors.loanAmount}
@@ -947,12 +952,13 @@ const ApplicationForm = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Loan Purpose *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="purpose-input">Loan Purpose *</label>
                 <select 
+                  id="purpose-input"
                   required 
                   value={formData.purpose} 
-                  onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} 
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  onChange={(e) => handleInputChange('purpose', e.target.value)} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                 >
                   <option value="">Select...</option>
                   <option value="Business Expansion">Business Expansion</option>
@@ -964,13 +970,14 @@ const ApplicationForm = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Number of Previous Loans</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="previous-loans-input">Number of Previous Loans</label>
                 <input 
+                  id="previous-loans-input"
                   type="number" 
                   min="0" 
                   value={formData.previousLoans} 
-                  onChange={(e) => setFormData({ ...formData, previousLoans: e.target.value })} 
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" 
+                  onChange={(e) => handleInputChange('previousLoans', e.target.value)} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all" 
                   placeholder="0"
                 />
                 <div className="text-xs text-gray-500 mt-1">Enter 0 if you're a new borrower</div>
@@ -989,40 +996,43 @@ const ApplicationForm = () => {
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Monthly Electricity Bill (₹) *</label>
+                  <label className="block text-sm text-gray-700 mb-1" htmlFor="electricity-bill-input">Monthly Electricity Bill (₹) *</label>
                   <input 
+                    id="electricity-bill-input"
                     required 
                     type="number" 
                     min="0"
                     value={formData.electricityBill} 
-                    onChange={(e) => setFormData({ ...formData, electricityBill: e.target.value })} 
-                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" 
+                    onChange={(e) => handleInputChange('electricityBill', e.target.value)} 
+                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white transition-all" 
                     placeholder="800" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Monthly Mobile Recharge (₹) *</label>
+                  <label className="block text-sm text-gray-700 mb-1" htmlFor="mobile-recharge-input">Monthly Mobile Recharge (₹) *</label>
                   <input 
+                    id="mobile-recharge-input"
                     required 
                     type="number" 
                     min="0"
                     value={formData.mobileRecharge} 
-                    onChange={(e) => setFormData({ ...formData, mobileRecharge: e.target.value })} 
-                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" 
+                    onChange={(e) => handleInputChange('mobileRecharge', e.target.value)} 
+                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white transition-all" 
                     placeholder="200" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Other Utility Payments (₹) *</label>
+                  <label className="block text-sm text-gray-700 mb-1" htmlFor="utility-payments-input">Other Utility Payments (₹) *</label>
                   <input 
+                    id="utility-payments-input"
                     required 
                     type="number" 
                     min="0"
                     value={formData.utilityPayments} 
-                    onChange={(e) => setFormData({ ...formData, utilityPayments: e.target.value })} 
-                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" 
+                    onChange={(e) => handleInputChange('utilityPayments', e.target.value)} 
+                    className="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white transition-all" 
                     placeholder="500" 
                   />
                 </div>
@@ -1036,11 +1046,12 @@ const ApplicationForm = () => {
                 Business Activity (Optional)
               </div>
               <input 
+                id="business-income-input"
                 type="number" 
                 min="0"
                 value={formData.businessIncome} 
-                onChange={(e) => setFormData({ ...formData, businessIncome: e.target.value })} 
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" 
+                onChange={(e) => handleInputChange('businessIncome', e.target.value)} 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all" 
                 placeholder="Estimated monthly business income" 
               />
             </section>
@@ -1108,6 +1119,7 @@ const ApplicationForm = () => {
     </div>
   );
 };
+
   // ---------- Score Result ---------- //
   const ScoreResult = () => {
     const app = applications.find((a) => a.id === currentAppId) || applications[0];
@@ -1536,7 +1548,7 @@ const ApplicationForm = () => {
       )}
 
       {currentPage === "landing" && <LandingPage />}
-      {currentPage === "apply" && <ApplicationForm />}
+      {currentPage === "apply" && <ApplicationForm key="application-form" />}
       {currentPage === "score" && <ScoreResult />}
       {currentPage === "dashboard" && <Dashboard />}
       {currentPage === "admin" && <AdminPanel />}
