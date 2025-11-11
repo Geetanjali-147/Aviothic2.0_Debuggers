@@ -1,5 +1,4 @@
 // SahayScore Configuration Constants
-
 export const SCORING_WEIGHTS = {
   // Repayment Score Components (max 500)
   PREVIOUS_LOAN_MULTIPLIER: 80,
@@ -9,7 +8,6 @@ export const SCORING_WEIGHTS = {
   BUSINESS_INCOME_MAX: 150,
   BASE_REPAYMENT_SCORE: 150,
   MAX_REPAYMENT_SCORE: 500,
-
   // Need Score Components (max 500)
   ELECTRICITY_BASE: 200,
   ELECTRICITY_DIVISOR: 20,
@@ -18,7 +16,6 @@ export const SCORING_WEIGHTS = {
   UTILITY_BASE: 150,
   UTILITY_DIVISOR: 10,
   MAX_NEED_SCORE: 500,
-
   // Composite Score
   MAX_COMPOSITE_SCORE: 1000
 };
@@ -51,7 +48,8 @@ export const VALIDATION_PATTERNS = {
   PHONE_WITH_CODE: /^(\+91)?[6-9]\d{9}$/
 };
 
-export const API_BASE_URL = 'http://localhost:5000/api';
+// ✅ FIXED - Uses environment variable with localhost fallback
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const STATUS = {
   APPROVED: 'approved',
